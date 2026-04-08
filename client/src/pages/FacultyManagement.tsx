@@ -381,18 +381,18 @@ export function FacultyManagement() {
       ) : null}
 
       {showModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-          <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/15">
-            <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-indigo-50/60 px-6 py-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-5">
+          <div className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/15 sm:max-h-[min(820px,calc(100vh-2.5rem))] sm:max-w-xl">
+            <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-indigo-50/60 px-4 py-4 sm:px-5 sm:py-4.5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
                     User Management
                   </p>
-                  <h3 className="mt-1 text-2xl font-black tracking-[-0.04em] text-slate-900">
+                  <h3 className="mt-1 text-xl font-black tracking-[-0.04em] text-slate-900 sm:text-2xl">
                     {editingUser ? 'Edit User' : 'Add User'}
                   </h3>
-                  <p className="mt-2 max-w-xl text-sm text-slate-500">
+                  <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
                     {editingUser
                       ? 'Update the existing account instead of creating a duplicate record with the same email.'
                       : 'Create admin and faculty accounts with a temporary default password for first login.'}
@@ -413,15 +413,16 @@ export function FacultyManagement() {
               </div>
             </div>
 
-            <form onSubmit={(event) => void handleCreate(event)} className="space-y-5 px-6 py-6">
+            <form onSubmit={(event) => void handleCreate(event)} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
               {modalError ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
                   {modalError}
                 </div>
               ) : null}
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="md:col-span-2">
+              <div className="grid gap-3 sm:gap-4">
+                <div>
                   <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                     Role
                   </label>
@@ -434,14 +435,18 @@ export function FacultyManagement() {
                     <option value="ADMIN">Admin</option>
                   </select>
                 </div>
-                {([
-                  ['name', 'Name'],
-                  ['email', 'Email'],
-                  ['department', 'Department'],
-                  ['designation', 'Designation'],
-                  ['phone', 'Phone'],
-                ] as const).map(([key, label]) => (
-                  <div key={key} className={key === 'email' ? 'md:col-span-2' : ''}>
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                  {([
+                    ['name', 'Name'],
+                    ['email', 'Email'],
+                    ['department', 'Department'],
+                    ['designation', 'Designation'],
+                    ['phone', 'Phone'],
+                  ] as const).map(([key, label]) => (
+                    <div
+                      key={key}
+                      className={key === 'email' ? 'sm:col-span-2' : ''}
+                    >
                     <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
                       {label}
                     </label>
@@ -452,8 +457,9 @@ export function FacultyManagement() {
                       required={key === 'email' || key === 'name'}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
                     />
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-4">
@@ -471,8 +477,9 @@ export function FacultyManagement() {
                   </p>
                 </div>
               </div>
+              </div>
 
-              <div className="flex justify-end gap-3 border-t border-slate-100 pt-2">
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
                 <button
                   type="button"
                   onClick={() => {
