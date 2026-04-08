@@ -554,9 +554,11 @@ export function updateFacultyUser(
   userId: string,
   payload: {
     name?: string;
+    email?: string;
     department?: string | null;
     designation?: string | null;
     phone?: string | null;
+    role?: 'ADMIN' | 'FACULTY';
     isActive?: boolean;
   },
 ) {
