@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { InitialsAvatar } from '../components/InitialsAvatar';
 import { staggerStyle } from '../components/Motion';
@@ -183,8 +184,161 @@ export function FacultyManagement() {
     }
   };
 
+  const resetPasswordModal = resetUser ? createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="mb-2 font-bold text-on-surface">Reset Password?</h3>
+        <p className="mb-5 text-sm text-on-surface-variant">
+          Password resets to <span className="font-mono font-bold text-primary">{defaultPassword}</span>. User must change it on next login.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => setResetUser(null)}
+            className="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm transition-colors hover:bg-surface-container-low"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => void confirmReset()}
+            disabled={busyUserId === resetUser.id}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+
+  const userModal = showModal ? createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-5">
+      <div className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/15 sm:max-h-[min(820px,calc(100vh-2.5rem))] sm:max-w-xl">
+        <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-indigo-50/60 px-4 py-4 sm:px-5 sm:py-4.5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                User Management
+              </p>
+              <h3 className="mt-1 text-xl font-black tracking-[-0.04em] text-slate-900 sm:text-2xl">
+                {editingUser ? 'Edit User' : 'Add User'}
+              </h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                {editingUser
+                  ? 'Update the existing account instead of creating a duplicate record with the same email.'
+                  : 'Create admin and faculty accounts with a temporary default password for first login.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowModal(false);
+                setEditingUser(null);
+                setModalError('');
+              }}
+              className="rounded-full p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
+              aria-label="Close dialog"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={(event) => void handleCreate(event)} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+            {modalError ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                {modalError}
+              </div>
+            ) : null}
+
+            <div className="grid gap-3 sm:gap-4">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                  Role
+                </label>
+                <select
+                  value={form.role}
+                  onChange={(event) => setForm((current) => ({ ...current, role: event.target.value as 'ADMIN' | 'FACULTY' }))}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
+                >
+                  <option value="FACULTY">Faculty</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                {([
+                  ['name', 'Name'],
+                  ['email', 'Email'],
+                  ['department', 'Department'],
+                  ['designation', 'Designation'],
+                  ['phone', 'Phone'],
+                ] as const).map(([key, label]) => (
+                  <div
+                    key={key}
+                    className={key === 'email' ? 'sm:col-span-2' : ''}
+                  >
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                      {label}
+                    </label>
+                    <input
+                      type={key === 'email' ? 'email' : 'text'}
+                      value={form[key]}
+                      onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
+                      required={key === 'email' || key === 'name'}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-4">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                <span className="material-symbols-outlined text-[18px]">shield_lock</span>
+              </div>
+              <div className="text-sm text-slate-600">
+                <p className="font-semibold text-slate-900">
+                  Default password: <span className="font-mono text-primary">{defaultPassword}</span>
+                </p>
+                <p className="mt-1">
+                  {editingUser
+                    ? 'Role, email, and profile details can be updated here without recreating the account.'
+                    : `New ${form.role === 'ADMIN' ? 'admin' : 'faculty'} users must change it on first login.`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+            <button
+              type="button"
+              onClick={() => {
+                setShowModal(false);
+                setEditingUser(null);
+                setModalError('');
+              }}
+              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-sm shadow-primary/30 transition hover:opacity-95 disabled:opacity-50"
+            >
+              {editingUser ? 'Save Changes' : 'Create Account'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+
   return (
-    <PageShell>
+    <>
+      <PageShell>
       <PageHeader
         title="User Management"
         description={(
@@ -354,155 +508,9 @@ export function FacultyManagement() {
         </table>
       </div>
 
-      {resetUser ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="mb-2 font-bold text-on-surface">Reset Password?</h3>
-            <p className="mb-5 text-sm text-on-surface-variant">
-              Password resets to <span className="font-mono font-bold text-primary">{defaultPassword}</span>. User must change it on next login.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setResetUser(null)}
-                className="rounded-lg border border-outline-variant/30 px-4 py-2 text-sm transition-colors hover:bg-surface-container-low"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => void confirmReset()}
-                disabled={busyUserId === resetUser.id}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-5">
-          <div className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/15 sm:max-h-[min(820px,calc(100vh-2.5rem))] sm:max-w-xl">
-            <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-indigo-50/60 px-4 py-4 sm:px-5 sm:py-4.5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                    User Management
-                  </p>
-                  <h3 className="mt-1 text-xl font-black tracking-[-0.04em] text-slate-900 sm:text-2xl">
-                    {editingUser ? 'Edit User' : 'Add User'}
-                  </h3>
-                  <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-                    {editingUser
-                      ? 'Update the existing account instead of creating a duplicate record with the same email.'
-                      : 'Create admin and faculty accounts with a temporary default password for first login.'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingUser(null);
-                    setModalError('');
-                  }}
-                  className="rounded-full p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
-                  aria-label="Close dialog"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={(event) => void handleCreate(event)} className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-              {modalError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-                  {modalError}
-                </div>
-              ) : null}
-
-              <div className="grid gap-3 sm:gap-4">
-                <div>
-                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                    Role
-                  </label>
-                  <select
-                    value={form.role}
-                    onChange={(event) => setForm((current) => ({ ...current, role: event.target.value as 'ADMIN' | 'FACULTY' }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
-                  >
-                    <option value="FACULTY">Faculty</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                  {([
-                    ['name', 'Name'],
-                    ['email', 'Email'],
-                    ['department', 'Department'],
-                    ['designation', 'Designation'],
-                    ['phone', 'Phone'],
-                  ] as const).map(([key, label]) => (
-                    <div
-                      key={key}
-                      className={key === 'email' ? 'sm:col-span-2' : ''}
-                    >
-                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                      {label}
-                    </label>
-                    <input
-                      type={key === 'email' ? 'email' : 'text'}
-                      value={form[key]}
-                      onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
-                      required={key === 'email' || key === 'name'}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10"
-                    />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-4">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
-                  <span className="material-symbols-outlined text-[18px]">shield_lock</span>
-                </div>
-                <div className="text-sm text-slate-600">
-                  <p className="font-semibold text-slate-900">
-                    Default password: <span className="font-mono text-primary">{defaultPassword}</span>
-                  </p>
-                  <p className="mt-1">
-                    {editingUser
-                      ? 'Role, email, and profile details can be updated here without recreating the account.'
-                      : `New ${form.role === 'ADMIN' ? 'admin' : 'faculty'} users must change it on first login.`}
-                  </p>
-                </div>
-              </div>
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingUser(null);
-                    setModalError('');
-                  }}
-                  className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-sm shadow-primary/30 transition hover:opacity-95 disabled:opacity-50"
-                >
-                  {editingUser ? 'Save Changes' : 'Create Account'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
-    </PageShell>
+      </PageShell>
+      {resetPasswordModal}
+      {userModal}
+    </>
   );
 }
