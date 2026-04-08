@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PageHeader, PageShell } from '../components/PageShell';
-import { listAcademicYears, setActiveAcademicYear } from '../lib/api';
+import { createAcademicYear, listAcademicYears, setActiveAcademicYear } from '../lib/api';
 import type { AcademicYearSummary } from '../types/domain';
 
 // ─── Grade data (OUTR 9-point system) ────────────────────────────────────────
@@ -76,6 +76,9 @@ export function Settings() {
   
   const [academicYears, setAcademicYears] = useState<AcademicYearSummary[]>([]);
   const [activeYearId, setActiveYearId] = useState('');
+  const [newAcademicYearLabel, setNewAcademicYearLabel] = useState('');
+  const [makeNewYearActive, setMakeNewYearActive] = useState(true);
+  const [isSavingAcademicYear, setIsSavingAcademicYear] = useState(false);
 
   const fetchYears = async () => {
     try {
@@ -109,6 +112,31 @@ export function Settings() {
       show('Active year updated successfully');
     } catch {
       show('Failed to update active year', false);
+    }
+  };
+
+  const saveAcademicYear = async () => {
+    const trimmed = newAcademicYearLabel.trim();
+    if (!trimmed) {
+      show('Enter an academic year label first', false);
+      return;
+    }
+
+    setIsSavingAcademicYear(true);
+    try {
+      const created = await createAcademicYear({
+        label: trimmed,
+        isCurrent: makeNewYearActive,
+      });
+      await fetchYears();
+      setNewAcademicYearLabel('');
+      setMakeNewYearActive(true);
+      setActiveYearId(created.id);
+      show(`Academic year ${created.label} added successfully`);
+    } catch {
+      show('Failed to add academic year', false);
+    } finally {
+      setIsSavingAcademicYear(false);
     }
   };
   const { show, Toast } = useToast();
@@ -276,26 +304,63 @@ export function Settings() {
 
       {/* ── 3. Active Academic Year ──────────────────────────────────── */}
       <Card title="ACTIVE ACADEMIC YEAR">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Current Academic Year</label>
-            <select value={activeYearId} onChange={e => setActiveYearId(e.target.value)}
-              className="w-full max-w-xs px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-primary/50">
-              {academicYears.map((ay: AcademicYearSummary) => (
-                <option key={ay.id} value={ay.id}>{ay.label}</option>
-              ))}
-            </select>
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+              <div className="flex-1 min-w-0">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Add Academic Year</label>
+                <input
+                  value={newAcademicYearLabel}
+                  onChange={e => setNewAcademicYearLabel(e.target.value)}
+                  placeholder="e.g. 2025-26"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold focus:outline-none focus:border-primary/50"
+                />
+              </div>
+              <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={makeNewYearActive}
+                  onChange={e => setMakeNewYearActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/20"
+                />
+                Make active immediately
+              </label>
+              <button
+                onClick={saveAcademicYear}
+                disabled={isSavingAcademicYear}
+                className="px-5 py-2.5 text-sm font-black text-white bg-gradient-to-r from-primary to-secondary rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isSavingAcademicYear ? 'Adding...' : 'Add Year'}
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Labels like <strong>2025-26</strong> or <strong>2025-2026</strong> are supported.
+            </p>
           </div>
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-xl flex-shrink-0">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-              {academicYears.find((ay: AcademicYearSummary) => ay.isCurrent)?.label || 'None'} Active
-            </span>
+
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Current Academic Year</label>
+              <select value={activeYearId} onChange={e => setActiveYearId(e.target.value)}
+                className="w-full max-w-xs px-3 py-2.5 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:outline-none focus:border-primary/50">
+                <option value="" disabled>{academicYears.length ? 'Select academic year' : 'No academic years available'}</option>
+                {academicYears.map((ay: AcademicYearSummary) => (
+                  <option key={ay.id} value={ay.id}>{ay.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-xl flex-shrink-0">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                {academicYears.find((ay: AcademicYearSummary) => ay.isCurrent)?.label || 'None'} Active
+              </span>
+            </div>
+            <button onClick={saveActiveYear}
+              disabled={!activeYearId}
+              className="px-5 py-2.5 text-sm font-black text-white bg-gradient-to-r from-primary to-secondary rounded-xl hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-50">
+              Set Active
+            </button>
           </div>
-          <button onClick={saveActiveYear}
-            className="px-5 py-2.5 text-sm font-black text-white bg-gradient-to-r from-primary to-secondary rounded-xl hover:opacity-90 transition-opacity flex-shrink-0">
-            Set Active
-          </button>
         </div>
       </Card>
 

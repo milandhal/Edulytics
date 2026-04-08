@@ -88,6 +88,11 @@ academicRouter.get(
   requireRole(["ADMIN", "SUPER_ADMIN"]),
   asyncHandler(ReadController.listAcademicYears),
 );
+academicRouter.post(
+  "/academic-years",
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  asyncHandler(WriteController.createAcademicYear),
+);
 academicRouter.patch(
   "/academic-years/:id/active",
   requireRole(["ADMIN", "SUPER_ADMIN"]),

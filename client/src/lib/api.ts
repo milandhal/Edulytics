@@ -654,3 +654,14 @@ export function setActiveAcademicYear(academicYearId: string) {
   });
 }
 
+export function createAcademicYear(payload: { label: string; isCurrent?: boolean }) {
+  return apiRequest<AcademicYearSummary>('/api/v1/academic-years', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }).then((result) => {
+    invalidateApiCache('/api/v1/academic-years');
+    invalidateApiCache('/api/v1/dashboard');
+    return result;
+  });
+}
+

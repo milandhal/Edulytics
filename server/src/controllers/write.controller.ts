@@ -193,6 +193,11 @@ const saveAttainmentSchema = z.object({
   level3: z.number().int().min(0).max(100),
 });
 
+const createAcademicYearSchema = z.object({
+  label: z.string().trim().min(1, "Academic year label is required"),
+  isCurrent: z.boolean().optional().default(false),
+});
+
 const updateProgramSchema = z.object({
   code: z.string().trim().min(1, "Program code is required").optional(),
   name: z.string().trim().min(1, "Program name is required").optional(),
@@ -900,6 +905,69 @@ export const WriteController = {
       });
     });
     return ok(res, { success: true });
+  },
+
+  async createAcademicYear(req: Request, res: Response) {
+    if (!req.user) {
+      throw new ApiError({ status: 401, code: "TOKEN_MISSING", message: "Missing access token" });
+    }
+    const actorUserId = req.user.id;
+    const payload = parseOrThrow(createAcademicYearSchema, req.body);
+    const parsed = parseAcademicYearLabel(payload.label);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.academicYear.findUnique({
+        where: { label: parsed.label },
+      });
+
+      if (existing && !existing.deletedAt) {
+        throw new ApiError({
+          status: 409,
+          code: "ACADEMIC_YEAR_EXISTS",
+          message: "Academic year already exists",
+        });
+      }
+
+      if (payload.isCurrent) {
+        await tx.academicYear.updateMany({
+          where: { isCurrent: true, deletedAt: null },
+          data: { isCurrent: false },
+        });
+      }
+
+      const academicYear = existing
+        ? await tx.academicYear.update({
+            where: { id: existing.id },
+            data: {
+              label: parsed.label,
+              startYear: parsed.startYear,
+              endYear: parsed.endYear,
+              deletedAt: null,
+              isCurrent: payload.isCurrent,
+            },
+          })
+        : await tx.academicYear.create({
+            data: {
+              label: parsed.label,
+              startYear: parsed.startYear,
+              endYear: parsed.endYear,
+              isCurrent: payload.isCurrent,
+            },
+          });
+
+      await tx.activityLog.create({
+        data: {
+          userId: actorUserId,
+          action: "Created academic year",
+          entityType: "settings",
+          metadata: { academicYearId: academicYear.id, label: academicYear.label },
+        },
+      });
+
+      return academicYear;
+    });
+
+    return ok(res, result);
   },
 
   async setActiveAcademicYear(req: Request, res: Response) {
