@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables (NEVER commit these)
+.env
+**/.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+**/dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# TypeScript build info
+*.tsbuildinfo
+client_legacy
+
+
+# Reports folder
+Reports/
+
+# Package lock (optional - some teams commit this, up to you)
+# package-lock.json
+
+# Uploaded files / temp
+uploads/
+tmp/
+temp/
+
+# Docker volumes
+postgres_data/
+
+# Cleanup folder
+Not Required/

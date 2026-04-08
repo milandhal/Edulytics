@@ -1,0 +1,404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  FACULTY
+}
+
+enum StudentStatus {
+  ACTIVE
+  GRADUATED
+  DROPPED_OUT
+  INACTIVE
+}
+
+enum ProgramType {
+  UG
+  PG
+}
+
+enum SubjectType {
+  THEORY
+  LAB
+  ELECTIVE
+  ACTIVITY
+  HONS_MINOR
+}
+
+enum ExamComponent {
+  MID_SEM
+  END_SEM
+  QUIZ
+  ASSIGNMENT
+  ATTENDANCE
+}
+
+enum ExamSection {
+  A
+  B
+}
+
+enum Grade {
+  O
+  A
+  B
+  C
+  D
+  P
+  F
+  M
+  S
+  T
+  R
+}
+
+model User {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  email        String         @unique
+  passwordHash       String         @map("password_hash")
+  mustChangePassword Boolean        @default(false) @map("must_change_password")
+  role         Role
+  designation  String?
+  department   String?
+  phone        String?
+  isActive     Boolean        @default(true) @map("is_active")
+  deletedAt    DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  refreshTokens      RefreshToken[]
+  facultyAssignments FacultyAssignment[]
+  activityLogs       ActivityLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model Program {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  type           ProgramType
+  totalSemesters Int         @map("total_semesters")
+  isActive       Boolean     @default(true) @map("is_active")
+  deletedAt      DateTime?   @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  branches  Branch[]
+  students  Student[]
+
+  @@map("programs")
+}
+
+model Branch {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  programId String    @map("program_id") @db.Uuid
+  name      String
+  code      String
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  program Program @relation(fields: [programId], references: [id])
+
+  courseOfferings CourseOffering[]
+  students        Student[]
+
+  @@unique([programId, code])
+  @@index([programId])
+  @@map("branches")
+}
+
+model AcademicYear {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label     String    @unique
+  startYear Int       @map("start_year")
+  endYear   Int       @map("end_year")
+  isCurrent Boolean   @default(false) @map("is_current")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  courseOfferings CourseOffering[]
+
+  @@map("academic_years")
+}
+
+model Subject {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String      @unique
+  name          String
+  type          SubjectType
+  lectureHours  Int         @map("lecture_hours")
+  tutorialHours Int         @map("tutorial_hours")
+  practicalHours Int        @map("practical_hours")
+  credits       Decimal     @db.Decimal(4, 1)
+  deletedAt     DateTime?   @map("deleted_at") @db.Timestamptz(6)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courseOfferings CourseOffering[]
+
+  @@map("subjects")
+}
+
+model CourseOffering {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subjectId      String      @map("subject_id") @db.Uuid
+  branchId       String      @map("branch_id") @db.Uuid
+  semesterNumber Int         @map("semester_number")
+  academicYearId String      @map("academic_year_id") @db.Uuid
+  section        String?     @db.VarChar(5)
+  isMarksLocked  Boolean     @default(false) @map("is_marks_locked")
+  isSetupLocked  Boolean     @default(false) @map("is_setup_locked")
+  deletedAt      DateTime?   @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subject      Subject      @relation(fields: [subjectId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  facultyAssignments FacultyAssignment[]
+  coDefinitions      CoDefinition[]
+  studentEnrollments StudentEnrollment[]
+  examSetups         ExamSetup[]
+  attendanceEntries  AttendanceEntry[]
+  backlogOriginal    BacklogRecord[] @relation("BacklogOriginalOffering")
+  backlogCleared     BacklogRecord[] @relation("BacklogClearedOffering")
+
+  @@unique([subjectId, branchId, semesterNumber, academicYearId, section])
+  @@index([branchId, semesterNumber])
+  @@map("course_offerings")
+}
+
+model FacultyAssignment {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferingId String   @map("course_offering_id") @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+
+  @@unique([courseOfferingId, userId])
+  @@index([userId])
+  @@map("faculty_assignments")
+}
+
+model CoDefinition {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferingId String   @map("course_offering_id") @db.Uuid
+  coNumber         Int      @map("co_number")
+  label            String   @db.VarChar(10)
+  description      String?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  examQuestions   ExamQuestion[]
+
+  @@unique([courseOfferingId, coNumber])
+  @@index([courseOfferingId])
+  @@map("co_definitions")
+}
+
+model Student {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  registrationNumber String    @unique @map("registration_number") @db.VarChar(20)
+  name               String
+  email              String?
+  phone              String?
+  programId          String    @map("program_id") @db.Uuid
+  branchId           String    @map("branch_id") @db.Uuid
+  admissionYear      Int       @map("admission_year")
+  currentSemester    Int       @map("current_semester")
+  section            String?   @db.VarChar(5)
+  status             StudentStatus @default(ACTIVE) @map("status")
+  graduationYear     Int?      @map("graduation_year")
+  graduationDate     DateTime? @map("graduation_date") @db.Timestamptz(6)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  program Program @relation(fields: [programId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  enrollments       StudentEnrollment[]
+  marks             StudentMark[]
+  attendanceEntries AttendanceEntry[]
+  backlogs          BacklogRecord[]
+
+  @@index([branchId, currentSemester])
+  @@map("students")
+}
+
+model StudentEnrollment {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId        String   @map("student_id") @db.Uuid
+  courseOfferingId String   @map("course_offering_id") @db.Uuid
+  isElective       Boolean  @default(false) @map("is_elective")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  student        Student        @relation(fields: [studentId], references: [id])
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+
+  @@unique([studentId, courseOfferingId])
+  @@index([courseOfferingId])
+  @@map("student_enrollments")
+}
+
+model ExamSetup {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseOfferingId String        @map("course_offering_id") @db.Uuid
+  component        ExamComponent
+  isStructureLocked Boolean      @default(false) @map("is_structure_locked")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  questions      ExamQuestion[]
+
+  @@unique([courseOfferingId, component])
+  @@index([courseOfferingId])
+  @@map("exam_setups")
+}
+
+model ExamQuestion {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examSetupId    String      @map("exam_setup_id") @db.Uuid
+  coDefinitionId String      @map("co_definition_id") @db.Uuid
+  label          String      @db.VarChar(20)
+  maxMarks       Decimal     @map("max_marks") @db.Decimal(5, 2)
+  section        ExamSection?
+  groupNumber    Int?        @map("group_number")
+  questionOrder  Int         @map("question_order")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examSetup     ExamSetup    @relation(fields: [examSetupId], references: [id])
+  coDefinition  CoDefinition @relation(fields: [coDefinitionId], references: [id])
+  studentMarks  StudentMark[]
+
+  @@unique([examSetupId, label])
+  @@index([examSetupId])
+  @@map("exam_questions")
+}
+
+model StudentMark {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId     String   @map("student_id") @db.Uuid
+  examQuestionId String  @map("exam_question_id") @db.Uuid
+  marksObtained Decimal? @map("marks_obtained") @db.Decimal(5, 2)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student     Student     @relation(fields: [studentId], references: [id])
+  examQuestion ExamQuestion @relation(fields: [examQuestionId], references: [id])
+
+  @@unique([studentId, examQuestionId])
+  @@index([examQuestionId])
+  @@map("student_marks")
+}
+
+model AttendanceEntry {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId        String   @map("student_id") @db.Uuid
+  courseOfferingId String   @map("course_offering_id") @db.Uuid
+  score            Decimal  @db.Decimal(4, 2)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student        Student        @relation(fields: [studentId], references: [id])
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+
+  @@unique([studentId, courseOfferingId])
+  @@index([courseOfferingId])
+  @@map("attendance_entries")
+}
+
+model BacklogRecord {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId          String   @map("student_id") @db.Uuid
+  originalOfferingId String   @map("original_offering_id") @db.Uuid
+  clearedOfferingId  String?  @map("cleared_offering_id") @db.Uuid
+  originalGrade      Grade    @map("original_grade")
+  clearedGrade       Grade?   @map("cleared_grade")
+  isCleared          Boolean  @default(false) @map("is_cleared")
+  clearedAt          DateTime? @map("cleared_at") @db.Timestamptz(6)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student Student @relation(fields: [studentId], references: [id])
+  originalOffering CourseOffering @relation("BacklogOriginalOffering", fields: [originalOfferingId], references: [id])
+  clearedOffering  CourseOffering? @relation("BacklogClearedOffering", fields: [clearedOfferingId], references: [id])
+
+  @@unique([studentId, originalOfferingId])
+  @@index([studentId])
+  @@map("backlog_records")
+}
+
+model GradeConfig {
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  grade        Grade  @unique
+  qualification String
+  minScore     Int?   @map("min_score")
+  maxScore     Int?   @map("max_score")
+  gradePoint   Int    @map("grade_point")
+  isAdminOnly  Boolean @default(false) @map("is_admin_only")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("grade_configs")
+}
+
+model AttainmentConfig {
+  id                        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  level                     Int     @unique
+  studentPercentageThreshold Int    @map("student_percentage_threshold")
+  scorePercentageThreshold   Int    @map("score_percentage_threshold")
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("attainment_configs")
+}
+
+model ActivityLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("activity_logs")
+}
+
