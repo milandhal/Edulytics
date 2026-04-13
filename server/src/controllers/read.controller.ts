@@ -194,8 +194,8 @@ function toPercent(numerator: number, denominator: number) {
   return Math.max(0, Math.min(100, Math.round((numerator / denominator) * 100)));
 }
 
-function buildMarksProgress(offering: OfferingSummaryRecord) {
-  const enrolledStudents = offering._count.studentEnrollments;
+function buildMarksProgress(offering: OfferingSummaryRecord, enrolledStudents?: number) {
+  const resolvedEnrolled = enrolledStudents ?? offering._count.studentEnrollments;
   const progress = {
     mid: 0,
     quiz: 0,
@@ -210,7 +210,7 @@ function buildMarksProgress(offering: OfferingSummaryRecord) {
       (sum, question) => sum + question._count.studentMarks,
       0,
     );
-    const expectedMarks = enrolledStudents * questionCount;
+    const expectedMarks = resolvedEnrolled * questionCount;
     const percentage = toPercent(filledMarks, expectedMarks);
 
     if (setup.component === ExamComponent.MID_SEM) {
@@ -224,7 +224,7 @@ function buildMarksProgress(offering: OfferingSummaryRecord) {
     }
   }
 
-  progress.att = toPercent(offering.attendanceEntries.length, enrolledStudents);
+  progress.att = toPercent(offering.attendanceEntries.length, resolvedEnrolled);
 
   return progress;
 }
@@ -389,7 +389,7 @@ function serializeOfferingSummary(
     })),
     _count: offering._count,
     studentCount,
-    marksProgress: buildMarksProgress(offering),
+    marksProgress: buildMarksProgress(offering, studentCount),
     setupProgress: buildSetupProgress(offering),
     isStructureLocked: offering.isSetupLocked,
     isMarksLocked: offering.isMarksLocked,
@@ -512,7 +512,7 @@ export const ReadController = {
         ),
       ) ?? assignment.courseOffering._count.studentEnrollments;
       const accent = ["#005bc1", "#0077b6", "#0096c7", "#00b4d8"][index % 4] ?? "#005bc1";
-      const marksProgress = buildMarksProgress(assignment.courseOffering);
+      const marksProgress = buildMarksProgress(assignment.courseOffering, students);
 
       pendingComponents += countPendingComponents(marksProgress);
 
