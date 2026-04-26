@@ -237,18 +237,55 @@ export async function saveSetup(req: Request, res: Response) {
         }
       }
 
-      await tx.examQuestion.deleteMany({ where: { examSetupId: setup!.id } });
-      await tx.examQuestion.createMany({
-        data: questions.map((q, i) => ({
+      const incomingLabels = questions.map((q) => q.label.trim());
+
+      // Delete questions that are no longer in the setup
+      const questionsToDelete = await tx.examQuestion.findMany({
+        where: {
           examSetupId: setup!.id,
-          coDefinitionId: q.coId,
-          label: q.label.trim(),
-          maxMarks: q.maxMarks,
-          section: (q.section === "A" ? "A" : q.section === "B" ? "B" : null) as any,
-          groupNumber: q.groupNumber ?? null,
-          questionOrder: i,
-        })),
+          label: { notIn: incomingLabels },
+        },
+        select: { id: true },
       });
+
+      if (questionsToDelete.length > 0) {
+        const idsToDelete = questionsToDelete.map((q) => q.id);
+        await tx.studentMark.deleteMany({
+          where: { examQuestionId: { in: idsToDelete } },
+        });
+        await tx.examQuestion.deleteMany({
+          where: { id: { in: idsToDelete } },
+        });
+      }
+
+      // Upsert questions
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        await tx.examQuestion.upsert({
+          where: {
+            examSetupId_label: {
+              examSetupId: setup!.id,
+              label: q.label.trim(),
+            },
+          },
+          update: {
+            coDefinitionId: q.coId,
+            maxMarks: q.maxMarks,
+            section: (q.section === "A" ? "A" : q.section === "B" ? "B" : null) as any,
+            groupNumber: q.groupNumber ?? null,
+            questionOrder: i,
+          },
+          create: {
+            examSetupId: setup!.id,
+            coDefinitionId: q.coId,
+            label: q.label.trim(),
+            maxMarks: q.maxMarks,
+            section: (q.section === "A" ? "A" : q.section === "B" ? "B" : null) as any,
+            groupNumber: q.groupNumber ?? null,
+            questionOrder: i,
+          },
+        });
+      }
     });
     return ok(res, { success: true });
   } catch (err: any) {
@@ -465,7 +502,6 @@ export async function saveStudentMarks(req: Request, res: Response) {
 }
 
 // ── PUT /offerings/:id/marks/:comp/question/:qid ───────────────────────────
-
 export async function saveQuestionMarks(req: Request, res: Response) {
   const { id, comp, qid } = req.params;
   const component = compEnum(comp);
@@ -578,7 +614,21 @@ export async function removeCO(req: Request, res: Response) {
 
   // Cascade: unlink questions from this CO, then delete the CO
   await prisma.$transaction(async (tx) => {
-    await tx.examQuestion.deleteMany({ where: { coDefinitionId: coId } });
+    const questionsToDelete = await tx.examQuestion.findMany({
+      where: { coDefinitionId: coId },
+      select: { id: true },
+    });
+    
+    if (questionsToDelete.length > 0) {
+      const idsToDelete = questionsToDelete.map((q) => q.id);
+      await tx.studentMark.deleteMany({
+        where: { examQuestionId: { in: idsToDelete } },
+      });
+      await tx.examQuestion.deleteMany({
+        where: { id: { in: idsToDelete } },
+      });
+    }
+    
     await tx.coDefinition.delete({ where: { id: coId } });
   });
 
@@ -601,7 +651,20 @@ export async function resetCOs(req: Request, res: Response) {
 
     // Delete all questions referencing these COs
     if (coIds.length > 0) {
-      await tx.examQuestion.deleteMany({ where: { coDefinitionId: { in: coIds } } });
+      const questionsToDelete = await tx.examQuestion.findMany({
+        where: { coDefinitionId: { in: coIds } },
+        select: { id: true },
+      });
+      
+      if (questionsToDelete.length > 0) {
+        const idsToDelete = questionsToDelete.map((q) => q.id);
+        await tx.studentMark.deleteMany({
+          where: { examQuestionId: { in: idsToDelete } },
+        });
+        await tx.examQuestion.deleteMany({
+          where: { id: { in: idsToDelete } },
+        });
+      }
     }
 
     // Delete all old COs
@@ -636,6 +699,3 @@ export async function resetCOs(req: Request, res: Response) {
     cos: fresh.map((c) => ({ id: c.id, label: c.label, desc: c.description ?? "" })),
   });
 }
-
-
-
