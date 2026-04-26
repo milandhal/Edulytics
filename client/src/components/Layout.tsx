@@ -97,12 +97,12 @@ export function Layout() {
     user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.role === 'ADMIN' ? 'Admin' : 'Faculty';
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#f8fafc' }}>
-      <div className="pointer-events-none fixed -left-24 -top-24 z-0 h-[500px] w-[500px] rounded-full bg-primary opacity-[0.04] blur-[120px]" />
-      <div className="pointer-events-none fixed -bottom-24 -right-24 z-0 h-[600px] w-[600px] rounded-full bg-secondary opacity-[0.04] blur-[120px]" />
+    <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible print:bg-white" style={{ background: '#f8fafc' }}>
+      <div className="pointer-events-none fixed -left-24 -top-24 z-0 h-[500px] w-[500px] rounded-full bg-primary opacity-[0.04] blur-[120px] print:hidden" />
+      <div className="pointer-events-none fixed -bottom-24 -right-24 z-0 h-[600px] w-[600px] rounded-full bg-secondary opacity-[0.04] blur-[120px] print:hidden" />
 
       <aside
-        className={`relative z-40 flex h-full flex-shrink-0 flex-col border-r border-slate-100 bg-white/60 shadow-sm backdrop-blur-2xl transition-all duration-300 ${
+        className={`relative z-40 flex h-full flex-shrink-0 flex-col border-r border-slate-100 bg-white/60 shadow-sm backdrop-blur-2xl transition-all duration-300 print:hidden ${
           pinned ? 'w-60' : 'w-[60px]'
         }`}
       >
@@ -163,8 +163,8 @@ export function Layout() {
         </div>
       </aside>
 
-      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-[60px] flex-shrink-0 items-center justify-between border-b border-slate-100 bg-white/60 px-6 backdrop-blur-md">
+      <div className="relative z-10 flex flex-1 flex-col overflow-hidden print:overflow-visible">
+        <header className="flex h-[60px] flex-shrink-0 items-center justify-between border-b border-slate-100 bg-white/60 px-6 backdrop-blur-md print:hidden">
           <div className="min-w-0">
             <BrandMark role={role} />
           </div>
@@ -187,7 +187,7 @@ export function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto print:overflow-visible">
           <Outlet />
         </main>
       </div>

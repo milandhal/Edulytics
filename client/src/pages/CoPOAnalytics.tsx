@@ -131,6 +131,7 @@ export function CoPOAnalytics() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [thresholdPercent, setThresholdPercent] = useState(60);
   const [chartZoom, setChartZoom] = useState(1);
+  const [analysisComponent, setAnalysisComponent] = useState<ComponentKey>('mid');
   const [students, setStudents] = useState<MarksEntryStudent[]>([]);
   const [datasets, setDatasets] = useState<Partial<Record<ComponentKey, ComponentDataset>>>({});
   const [loading, setLoading] = useState(true);
@@ -350,9 +351,7 @@ export function CoPOAnalytics() {
   }, [activeComponents, classAverage, componentMaxMap, group, internalView, selectedStudent, studentRows, totalMax]);
 
   const coMetrics = useMemo<CoMetric[]>(() => {
-    if (activeComponents.length !== 1) return [];
-
-    const component = activeComponents[0];
+    const component = analysisComponent;
     if (!component || component === 'att') return [];
 
     const dataset = datasets[component];
@@ -381,7 +380,7 @@ export function CoPOAnalytics() {
         aboveThreshold,
       };
     });
-  }, [activeComponents, datasets, students]);
+  }, [analysisComponent, datasets, students]);
 
   const strongestCO = coMetrics.reduce<CoMetric | null>(
     (best, metric) => (!best || metric.averageRaw > best.averageRaw ? metric : best),
@@ -407,12 +406,26 @@ export function CoPOAnalytics() {
   }
 
   return (
-    <PageShell>
+    <PageShell className="print:px-0 print:py-0 print:w-full print:max-w-none">
+      {/* Print-only Cover Header */}
+      <div className="hidden print:block mb-8 border-b-2 border-slate-800 pb-4">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Subject Performance & Analytics Report</h1>
+        <div className="mt-3 flex justify-between text-sm text-slate-700">
+          <p><strong>Subject:</strong> {selectedOffering?.subject.name} ({selectedOffering?.subject.code})</p>
+          <p><strong>Branch:</strong> {selectedOffering?.branch.name} &bull; <strong>Semester:</strong> {selectedOffering?.semesterNumber}</p>
+        </div>
+        <div className="mt-1 flex justify-between text-xs text-slate-500">
+          <p><strong>Academic Year:</strong> {selectedOffering?.academicYear.label}</p>
+          <p>Generated on: {new Date().toLocaleDateString()}</p>
+        </div>
+      </div>
+
       <PageHeader
         title="Analytics"
+        className="print:hidden"
         description="Subject-wise performance insights for the offerings assigned to you."
         actions={(
-          <>
+          <div className="print:hidden flex items-center gap-2">
             <button
               onClick={() => setFilterOpen(true)}
               className="flex items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container-low"
@@ -420,11 +433,14 @@ export function CoPOAnalytics() {
               <span className="material-symbols-outlined text-lg">tune</span>
               Filters
             </button>
-            <button className="flex items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container-low">
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container-low"
+            >
               <span className="material-symbols-outlined text-lg">file_download</span>
               Export PDF
             </button>
-          </>
+          </div>
         )}
       />
 
@@ -434,7 +450,7 @@ export function CoPOAnalytics() {
         </div>
       ) : null}
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3 print:hidden">
         <div className="rounded-lg border border-primary/10 bg-primary/5 px-4 py-2">
           <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Current Scope</p>
           <p className="mt-1 text-sm font-bold text-on-surface">{currentScopeSummary}</p>
@@ -471,7 +487,7 @@ export function CoPOAnalytics() {
             color: selectedStudent ? 'text-secondary' : 'text-error',
           },
         ].map((card) => (
-          <div key={card.title} className="rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm">
+          <div key={card.title} className="rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
             <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">{card.title}</p>
             <h3 className={`mb-1 truncate text-2xl font-black ${card.color}`}>{card.value}</h3>
             <p className="text-[10px] font-bold text-on-surface-variant">{card.sub}</p>
@@ -480,7 +496,7 @@ export function CoPOAnalytics() {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_0.95fr]">
-        <div className="overflow-hidden rounded-2xl border border-outline-variant/10 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-outline-variant/10 bg-white shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
           <div className="border-b border-outline-variant/10 p-5">
             <h2 className="flex items-center gap-2 text-sm font-bold text-on-surface">
               <span className="material-symbols-outlined text-primary">bar_chart</span>
@@ -496,7 +512,7 @@ export function CoPOAnalytics() {
           <div className="p-5">
             {filteredStudents.length > 0 ? (
               <>
-                <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="mb-5 flex items-center justify-between gap-3 print:hidden">
                   <div className="flex items-center gap-3">
                     <select
                       value={selectedStudentId}
@@ -640,13 +656,13 @@ export function CoPOAnalytics() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">donut_large</span>
               <h2 className="text-sm font-bold text-on-surface">Score Distribution</h2>
             </div>
 
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="mb-4 flex flex-wrap gap-2 print:hidden">
               {[50, 60, 70, 80, 90].map((value) => (
                 <button
                   key={value}
@@ -694,7 +710,7 @@ export function CoPOAnalytics() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">insights</span>
               <h2 className="text-sm font-bold text-on-surface">Quick Signals</h2>
@@ -731,7 +747,7 @@ export function CoPOAnalytics() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_1fr]">
-        <div className="rounded-2xl border border-outline-variant/10 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-outline-variant/10 bg-white p-6 shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
               <h2 className="flex items-center gap-2 text-sm font-bold text-on-surface">
@@ -748,7 +764,7 @@ export function CoPOAnalytics() {
             {selectedOffering ? (
               <Link
                 to={`/offerings/${selectedOffering.id}/marks/${group === 'external' ? 'end' : (internalView === 'all' ? 'mid' : internalView)}`}
-                className="rounded-lg border border-outline-variant/20 px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/5"
+                className="rounded-lg border border-outline-variant/20 px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/5 print:hidden"
               >
                 Open Marks Entry
               </Link>
@@ -787,14 +803,35 @@ export function CoPOAnalytics() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-outline-variant/10 bg-white p-6 shadow-sm">
-          <h2 className="mb-5 flex items-center gap-2 text-sm font-bold text-on-surface">
-            <span className="material-symbols-outlined text-primary">bar_chart</span>
-            {activeComponents.length === 1 && activeComponents[0] !== 'att' ? 'CO Average Marks' : 'Component Summary'}
-          </h2>
+        <div className="rounded-2xl border border-outline-variant/10 bg-white p-6 shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
+          <div className="mb-5">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-on-surface">
+              <span className="material-symbols-outlined text-primary">bar_chart</span>
+              Mark Analysis (CO-wise)
+            </h2>
+            <div className="mt-4 flex flex-wrap gap-2 print:hidden">
+              {(['mid', 'quiz', 'asn', 'end'] as ComponentKey[]).map((compKey) => (
+                <button
+                  key={compKey}
+                  type="button"
+                  onClick={() => setAnalysisComponent(compKey)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                    analysisComponent === compKey
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  {componentLabels[compKey]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 hidden print:block text-xs font-bold text-on-surface-variant uppercase tracking-widest">
+              Selected Component: {componentLabels[analysisComponent]}
+            </p>
+          </div>
 
           <div className="space-y-5">
-            {activeComponents.length === 1 && activeComponents[0] !== 'att' ? (
+            {coMetrics.length > 0 ? (
               coMetrics.map((metric) => (
                 <div key={metric.label}>
                   <div className="mb-2 flex items-center justify-between text-xs font-bold">
@@ -820,36 +857,16 @@ export function CoPOAnalytics() {
                 </div>
               ))
             ) : (
-              activeComponents.map((component, index) => {
-                const averageRaw = studentRows.length
-                  ? Number((studentRows.reduce((sum, row) => sum + row.breakdownRaw[component], 0) / studentRows.length).toFixed(1))
-                  : 0;
-                const maxRaw = componentMaxMap[component] ?? 0;
-
-                return (
-                  <div key={component}>
-                    <div className="mb-2 flex items-center justify-between text-xs font-bold">
-                      <span className="text-on-surface">{componentLabels[component]}</span>
-                      <span className="text-on-surface-variant">{averageRaw}/{maxRaw}</span>
-                    </div>
-                    <div className="h-7 overflow-hidden rounded-xl bg-surface-container-high">
-                      <div
-                        className={`flex h-full items-center bg-gradient-to-r px-3 text-[10px] font-bold text-white transition-all ${rainbowPalette[index % rainbowPalette.length]}`}
-                        style={{ width: `${maxRaw > 0 ? (averageRaw / maxRaw) * 100 : 0}%` }}
-                      >
-                        {averageRaw}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              <div className="rounded-xl border border-dashed border-outline-variant/20 py-8 text-center text-sm text-on-surface-variant">
+                No CO mapping found for this assessment.
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {lowestStudent ? (
-        <div className="mt-6 rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm">
+        <div className="mt-6 rounded-2xl border border-outline-variant/10 bg-white p-5 shadow-sm print:shadow-none print:border-slate-200 print:break-inside-avoid">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-sm font-bold text-on-surface">Watchlist</h2>
@@ -861,7 +878,7 @@ export function CoPOAnalytics() {
             <button
               type="button"
               onClick={() => setSelectedStudentId(lowestStudent.id)}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90 print:hidden"
             >
               Focus {lowestStudent.name}
             </button>
