@@ -7,7 +7,7 @@ export function LoginSelection() {
 
       {/* Header */}
       <div className="text-center mb-10">
-        <img src="/Edulytics.WEBP" alt="Edulytics Icon" className="mx-auto block w-[100px] h-[100px] mb-4 object-contain" />
+        <img src="/Edulytics.WEBP" alt="Edulytics Icon" className="mx-auto block w-[120px] h-[120px] mb-4 object-contain" />
         <h1 className="text-3xl"><BrandText /></h1>
         <p className="text-gray-400 text-sm mt-1">Select your role to continue</p>
       </div>
