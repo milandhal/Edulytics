@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { InitialsAvatar } from './InitialsAvatar';
+import { BrandText } from './BrandText';
 
 interface NavItemProps {
   to: string;
@@ -52,17 +53,9 @@ function BrandMark({}: { role: 'FACULTY' | 'ADMIN' }) {
         </span>
       </div>
       <div className="min-w-0">
-        <p
-          className="text-xl font-black leading-none tracking-tight"
-          style={{
-            background: 'linear-gradient(135deg, oklch(48.8% 0.243 264.376), oklch(49.6% 0.265 301.924))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          Edulytics
-        </p>
+        <div className="leading-none">
+          <BrandText className="text-xl" />
+        </div>
         <p className="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-widest text-slate-400">
           
         </p>

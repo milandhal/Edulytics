@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ApiClientError } from '../lib/api';
+import { BrandText } from '../components/BrandText';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -58,7 +59,9 @@ export function Login() {
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           <span className="text-xs font-medium">Back</span>
         </Link>
-        <span className="text-xl font-bold text-primary tracking-tight">Edulytics</span>
+        <div className="flex items-center">
+          <BrandText className="text-xl" />
+        </div>
         <div className="w-16" />
       </header>
 

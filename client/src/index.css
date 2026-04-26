@@ -135,6 +135,11 @@
     }
   }
 
+  @keyframes text-gradient-move {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
   .motion-reveal {
     opacity: 0;
     animation: reveal-up 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { BrandText } from '../components/BrandText';
 
 export function LoginSelection() {
   return (
@@ -6,8 +7,8 @@ export function LoginSelection() {
 
       {/* Header */}
       <div className="text-center mb-10">
-        <img src="/Edulytics.WEBP" alt="Edulytics Icon" className="mx-auto block w-[84px] h-[84px] mb-4 object-contain" />
-        <h1 className="text-2xl font-bold text-[#3D4761] tracking-tight">Edulytics</h1>
+        <img src="/Edulytics.WEBP" alt="Edulytics Icon" className="mx-auto block w-[100px] h-[100px] mb-4 object-contain" />
+        <h1 className="text-3xl"><BrandText /></h1>
         <p className="text-gray-400 text-sm mt-1">Select your role to continue</p>
       </div>
 
